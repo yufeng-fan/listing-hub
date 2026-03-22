@@ -76,7 +76,6 @@ export default function MapView({
           title: it.title,
         });
 
-        // InfoWindow still comes from 'maps' lib
         const info = new google.maps.InfoWindow({
           content: `
             <div style="min-width:200px">
@@ -104,7 +103,6 @@ export default function MapView({
 
     return () => {
       cancelled = true;
-      // Cleanup is handled by GC when the element unmounts
     };
   }, [items, center.lat, center.lng, zoom, onViewportChange]);
 
