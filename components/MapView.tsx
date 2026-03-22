@@ -42,6 +42,7 @@ export default function MapView({
         mapRef.current = new Map(ref.current, {
           center,
           zoom,
+          mapId: "DEMO_MAP_ID", // Google's built-in dev placeholder
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,

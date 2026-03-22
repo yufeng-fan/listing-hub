@@ -24,6 +24,7 @@ export default function MapSnippet({ lat, lng }: { lat: number; lng: number }) {
       const map = new Map(ref.current, {
         center: { lat, lng },
         zoom: 14,
+        mapId: "DEMO_MAP_ID", // Google's built-in dev placeholder
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
