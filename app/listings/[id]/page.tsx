@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { getListingById } from "@/lib/services/listings";
 import { Listing } from "@/types/listing";
 import ImageGallery from "@/components/ImageGallery";
 import FactGrid from "@/components/FactGrid";
 import MapSnippet from "@/components/MapSnippet";
 
-export default function ListingClient({ id }: { id: string }) {
+export default function ListingClient() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const params = useParams();
+  const id = params.id as string;
   useEffect(() => {
     let alive = true;
     (async () => {
