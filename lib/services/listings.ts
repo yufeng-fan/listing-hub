@@ -1,6 +1,15 @@
 import {
-  collection, doc, getDoc, getDocs, limit, orderBy, query,
-  startAfter, where, DocumentSnapshot, QueryConstraint
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  where,
+  DocumentSnapshot,
+  QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { Listing, ListingsFilter, PageResult } from "@/types/listing";
@@ -17,14 +26,15 @@ export async function getListingById(id: string): Promise<Listing | null> {
 export async function fetchListingsPage(
   filters: ListingsFilter,
   pageSize = 20,
-  cursor?: DocumentSnapshot
+  cursor?: DocumentSnapshot,
 ): Promise<PageResult<Listing>> {
   const constraints: QueryConstraint[] = [];
 
   // equality filters
   if (filters.status) constraints.push(where("status", "==", filters.status));
   if (filters.city) constraints.push(where("address.city", "==", filters.city));
-  if (filters.propertyType) constraints.push(where("property_type", "==", filters.propertyType));
+  if (filters.propertyType)
+    constraints.push(where("property_type", "==", filters.propertyType));
 
   // price inequality (single field inequality rule)
   const hasMin = typeof filters.priceMin === "number";
@@ -60,7 +70,8 @@ export async function fetchListingsPage(
     ? itemsRaw.filter((x) => x.bedrooms >= (filters.bedroomsMin as number))
     : itemsRaw;
 
-  const nextCursor = snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
+  const nextCursor =
+    snap.docs.length === pageSize ? snap.docs[snap.docs.length - 1] : null;
 
   return { items, nextCursor };
 }
@@ -80,13 +91,29 @@ function fromDoc(s: any): Listing {
       city: d.address?.city,
       state_region: d.address?.state_region,
       postal_code: d.address?.postal_code,
-      country: d.address?.country
+      country: d.address?.country,
     },
     location: {
       latitude: d.location?.latitude,
-      longitude: d.location?.longitude
+      longitude: d.location?.longitude,
     },
-    createdAt: d.createdAt?.toDate ? d.createdAt.toDate().toISOString() : d.createdAt,
-    updatedAt: d.updatedAt?.toDate ? d.updatedAt.toDate().toISOString() : d.updatedAt
+    images: Array.isArray(d.images)
+      ? d.images.map((img: any, idx: number) => ({
+          id: img.id || `${s.id}-img-${idx}`,
+          original_url: img.original_url,
+          thumbnail_url: img.thumbnail_url,
+          width: img.width,
+          height: img.height,
+          order: img.order,
+          uploaded_at: img.uploaded_at,
+        }))
+      : [],
+
+    createdAt: d.createdAt?.toDate
+      ? d.createdAt.toDate().toISOString()
+      : d.createdAt,
+    updatedAt: d.updatedAt?.toDate
+      ? d.updatedAt.toDate().toISOString()
+      : d.updatedAt,
   };
 }

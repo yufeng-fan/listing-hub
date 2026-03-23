@@ -33,13 +33,13 @@ export default function ListingClient() {
   const lat = listing.location.latitude;
   const lng = listing.location.longitude;
 
-  // Placeholder images, replace with listing_images later
-  const images = [
-    `https://picsum.photos/seed/${listing.id}/900/500`,
-    `https://picsum.photos/seed/${listing.id}-2/300/200`,
-    `https://picsum.photos/seed/${listing.id}-3/300/200`,
-    `https://picsum.photos/seed/${listing.id}-4/300/200`,
-  ];
+  const images: string[] =
+    listing.images.length > 0
+      ? [
+          listing.images[0].original_url,
+          ...listing.images.slice(1).map((img) => img.thumbnail_url),
+        ]
+      : [];
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-6">

@@ -33,7 +33,7 @@ export default function SearchClient() {
       latitude: x.location.latitude,
       longitude: x.location.longitude,
     },
-    thumbnail_url: undefined,
+    thumbnail_url: x.images.length > 0 ? x.images[0].thumbnail_url : null,
   });
 
   const loadFirst = useCallback(async (f: FilterState) => {

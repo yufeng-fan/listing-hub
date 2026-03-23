@@ -6,7 +6,7 @@ import type { ListingSummary } from "@/types/listing";
 
 export default function SearchResultsList({
   items,
-  itemHeight = 130,
+  itemHeight = 250,
   overscan = 4,
 }: {
   items: ListingSummary[];

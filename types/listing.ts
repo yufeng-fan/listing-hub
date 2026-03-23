@@ -19,6 +19,16 @@ export interface GeoPointLike {
   longitude: number;
 }
 
+export interface ListingImage {
+  id: string; // uuid
+  original_url: string;
+  thumbnail_url: string;
+  width: number;
+  height: number;
+  order: number;
+  uploaded_at: string; // ISO string
+}
+
 export interface Listing {
   id: string;
   agent_id: string;
@@ -30,6 +40,7 @@ export interface Listing {
   status: ListingStatus;
   address: Address;
   location: GeoPointLike; // serialized from Firestore GeoPoint
+  images: ListingImage[]; // ordered list, images[0] is the cover image
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }
