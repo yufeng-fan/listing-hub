@@ -23,6 +23,7 @@ export interface ListingImage {
   id: string; // uuid
   original_url: string;
   thumbnail_url: string;
+  path: string; // storage path for deletion
   width: number;
   height: number;
   order: number;

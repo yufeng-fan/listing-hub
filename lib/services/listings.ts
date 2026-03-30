@@ -15,14 +15,13 @@ import {
   QueryConstraint,
   serverTimestamp,
 } from "firebase/firestore";
+import { db, supabase } from "../firebase";
 import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { db, storage } from "../firebase";
-import { Listing, ListingImage, ListingsFilter, PageResult } from "@/types/listing";
+  Listing,
+  ListingImage,
+  ListingsFilter,
+  PageResult,
+} from "@/types/listing";
 
 const COLLECTION = "listings";
 
@@ -112,6 +111,7 @@ function fromDoc(s: any): Listing {
           id: img.id || `${s.id}-img-${idx}`,
           original_url: img.original_url,
           thumbnail_url: img.thumbnail_url,
+          path: img.path || "",
           width: img.width,
           height: img.height,
           order: img.order,
@@ -142,7 +142,10 @@ export async function getAgentListings(agentId: string): Promise<Listing[]> {
 
 /* ── Create ─────────────────────────────────────────────── */
 
-export type ListingInput = Omit<Listing, "id" | "createdAt" | "updatedAt" | "images"> & {
+export type ListingInput = Omit<
+  Listing,
+  "id" | "createdAt" | "updatedAt" | "images"
+> & {
   images?: ListingImage[];
 };
 
@@ -176,7 +179,7 @@ export async function deleteListing(id: string): Promise<void> {
   const listing = await getListingById(id);
   if (listing) {
     await Promise.all(
-      listing.images.map((img) => deleteListingImage(img.original_url)),
+      listing.images.map((img) => deleteListingImage(img.path)),
     );
   }
   await deleteDoc(doc(db, COLLECTION, id));
@@ -192,18 +195,22 @@ export async function uploadListingImage(
   const id = crypto.randomUUID();
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `listings/${agentId}/${id}.${ext}`;
-  const storageRef = ref(storage, path);
 
-  await uploadBytes(storageRef, file, {
+  const { error } = await supabase.storage.from("listings").upload(path, file, {
     contentType: file.type,
   });
 
-  const url = await getDownloadURL(storageRef);
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from("listings")
+    .getPublicUrl(path);
 
   return {
     id,
-    original_url: url,
-    thumbnail_url: url, // same URL – Firebase serves resized via image transforms
+    original_url: urlData.publicUrl,
+    thumbnail_url: urlData.publicUrl, // same URL – Supabase can serve resized via transforms if configured
+    path,
     width: 0,
     height: 0,
     order,
@@ -211,11 +218,11 @@ export async function uploadListingImage(
   };
 }
 
-export async function deleteListingImage(imageUrl: string): Promise<void> {
+export async function deleteListingImage(path: string): Promise<void> {
   try {
-    const storageRef = ref(storage, imageUrl);
-    await deleteObject(storageRef);
+    const { error } = await supabase.storage.from("listings").remove([path]);
+    if (error) throw error;
   } catch {
-    // Image may already be deleted or URL may not be a storage path
+    // Image may already be deleted or path may not exist
   }
 }
