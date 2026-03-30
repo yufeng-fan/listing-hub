@@ -3,6 +3,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   limit,
   orderBy,
   query,
@@ -10,9 +13,16 @@ import {
   where,
   DocumentSnapshot,
   QueryConstraint,
+  serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../firebase";
-import { Listing, ListingsFilter, PageResult } from "@/types/listing";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { db, storage } from "../firebase";
+import { Listing, ListingImage, ListingsFilter, PageResult } from "@/types/listing";
 
 const COLLECTION = "listings";
 
@@ -116,4 +126,96 @@ function fromDoc(s: any): Listing {
       ? d.updatedAt.toDate().toISOString()
       : d.updatedAt,
   };
+}
+
+/* ── Agent listings ─────────────────────────────────────── */
+
+export async function getAgentListings(agentId: string): Promise<Listing[]> {
+  const q = query(
+    collection(db, COLLECTION),
+    where("agent_id", "==", agentId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(fromDoc);
+}
+
+/* ── Create ─────────────────────────────────────────────── */
+
+export type ListingInput = Omit<Listing, "id" | "createdAt" | "updatedAt" | "images"> & {
+  images?: ListingImage[];
+};
+
+export async function createListing(data: ListingInput): Promise<string> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    ...data,
+    images: data.images ?? [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/* ── Update ─────────────────────────────────────────────── */
+
+export async function updateListing(
+  id: string,
+  data: Partial<ListingInput>,
+): Promise<void> {
+  const ref = doc(db, COLLECTION, id);
+  await updateDoc(ref, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/* ── Delete ─────────────────────────────────────────────── */
+
+export async function deleteListing(id: string): Promise<void> {
+  // Fetch existing images to clean up storage
+  const listing = await getListingById(id);
+  if (listing) {
+    await Promise.all(
+      listing.images.map((img) => deleteListingImage(img.original_url)),
+    );
+  }
+  await deleteDoc(doc(db, COLLECTION, id));
+}
+
+/* ── Image upload / delete ──────────────────────────────── */
+
+export async function uploadListingImage(
+  agentId: string,
+  file: File,
+  order: number,
+): Promise<ListingImage> {
+  const id = crypto.randomUUID();
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `listings/${agentId}/${id}.${ext}`;
+  const storageRef = ref(storage, path);
+
+  await uploadBytes(storageRef, file, {
+    contentType: file.type,
+  });
+
+  const url = await getDownloadURL(storageRef);
+
+  return {
+    id,
+    original_url: url,
+    thumbnail_url: url, // same URL – Firebase serves resized via image transforms
+    width: 0,
+    height: 0,
+    order,
+    uploaded_at: new Date().toISOString(),
+  };
+}
+
+export async function deleteListingImage(imageUrl: string): Promise<void> {
+  try {
+    const storageRef = ref(storage, imageUrl);
+    await deleteObject(storageRef);
+  } catch {
+    // Image may already be deleted or URL may not be a storage path
+  }
 }
