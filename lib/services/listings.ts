@@ -3,6 +3,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   limit,
   orderBy,
   query,
@@ -10,9 +13,15 @@ import {
   where,
   DocumentSnapshot,
   QueryConstraint,
+  serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../firebase";
-import { Listing, ListingsFilter, PageResult } from "@/types/listing";
+import { db, supabase } from "../firebase";
+import {
+  Listing,
+  ListingImage,
+  ListingsFilter,
+  PageResult,
+} from "@/types/listing";
 
 const COLLECTION = "listings";
 
@@ -102,6 +111,7 @@ function fromDoc(s: any): Listing {
           id: img.id || `${s.id}-img-${idx}`,
           original_url: img.original_url,
           thumbnail_url: img.thumbnail_url,
+          path: img.path || "",
           width: img.width,
           height: img.height,
           order: img.order,
@@ -116,4 +126,103 @@ function fromDoc(s: any): Listing {
       ? d.updatedAt.toDate().toISOString()
       : d.updatedAt,
   };
+}
+
+/* ── Agent listings ─────────────────────────────────────── */
+
+export async function getAgentListings(agentId: string): Promise<Listing[]> {
+  const q = query(
+    collection(db, COLLECTION),
+    where("agent_id", "==", agentId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(fromDoc);
+}
+
+/* ── Create ─────────────────────────────────────────────── */
+
+export type ListingInput = Omit<
+  Listing,
+  "id" | "createdAt" | "updatedAt" | "images"
+> & {
+  images?: ListingImage[];
+};
+
+export async function createListing(data: ListingInput): Promise<string> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    ...data,
+    images: data.images ?? [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+/* ── Update ─────────────────────────────────────────────── */
+
+export async function updateListing(
+  id: string,
+  data: Partial<ListingInput>,
+): Promise<void> {
+  const ref = doc(db, COLLECTION, id);
+  await updateDoc(ref, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/* ── Delete ─────────────────────────────────────────────── */
+
+export async function deleteListing(id: string): Promise<void> {
+  // Fetch existing images to clean up storage
+  const listing = await getListingById(id);
+  if (listing) {
+    await Promise.all(
+      listing.images.map((img) => deleteListingImage(img.path)),
+    );
+  }
+  await deleteDoc(doc(db, COLLECTION, id));
+}
+
+/* ── Image upload / delete ──────────────────────────────── */
+
+export async function uploadListingImage(
+  agentId: string,
+  file: File,
+  order: number,
+): Promise<ListingImage> {
+  const id = crypto.randomUUID();
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `listings/${agentId}/${id}.${ext}`;
+
+  const { error } = await supabase.storage.from("listings").upload(path, file, {
+    contentType: file.type,
+  });
+
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from("listings")
+    .getPublicUrl(path);
+
+  return {
+    id,
+    original_url: urlData.publicUrl,
+    thumbnail_url: urlData.publicUrl, // same URL – Supabase can serve resized via transforms if configured
+    path,
+    width: 0,
+    height: 0,
+    order,
+    uploaded_at: new Date().toISOString(),
+  };
+}
+
+export async function deleteListingImage(path: string): Promise<void> {
+  try {
+    const { error } = await supabase.storage.from("listings").remove([path]);
+    if (error) throw error;
+  } catch {
+    // Image may already be deleted or path may not exist
+  }
 }
