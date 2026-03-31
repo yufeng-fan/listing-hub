@@ -28,8 +28,8 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-[12px] border-b border-gray-100">
-      <nav className="max-w-[1200px] mx-auto px-6 h-15 flex items-center gap-8">
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+      <nav className="max-w-300 mx-auto px-6 h-15 flex items-center gap-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 no-underline mr-auto">
           <span className="text-xl text-[#1a1a2e]">⬡</span>
@@ -76,7 +76,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="font-dm text-sm font-medium py-2 px-4.5 rounded-xl no-underline border-none transition-all duration-150 inline-flex items-center bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                className="font-dm text-sm font-medium py-2 px-4.5 rounded-xl no-underline border transition-all duration-150 inline-flex items-center bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
                 Log in
               </Link>

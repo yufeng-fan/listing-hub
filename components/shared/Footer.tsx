@@ -3,8 +3,8 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="bg-[#1a1a2e] text-[#e5e7eb] mt-auto">
-      <div className="max-w-[1200px] mx-auto px-6 py-14 pb-10 flex gap-16 flex-wrap">
-        <div className="flex-none w-[200px]">
+      <div className="max-w-300 mx-auto px-6 py-14 pb-10 flex gap-16 flex-wrap">
+        <div className="flex-none w-50">
           <span className="text-xl mr-2">⬡</span>
           <span className="font-playfair text-xl font-bold text-white">
             Listing Hub
@@ -15,7 +15,7 @@ export default function Footer() {
         </div>
 
         <div className="flex-1 flex gap-12 flex-wrap">
-          <div className="flex flex-col gap-2.5 min-w-[120px]">
+          <div className="flex flex-col gap-2.5 min-w-30">
             <p className="font-dm text-xs font-semibold tracking-[0.08em] uppercase text-[#9ca3af] mb-1">
               Company
             </p>
@@ -41,7 +41,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-6 py-5 border-t border-[#2d2d4a] font-dm text-[0.8125rem] text-[#6b7280]">
+      <div className="max-w-300 mx-auto px-6 py-5 border-t border-[#2d2d4a] font-dm text-[0.8125rem] text-[#6b7280]">
         <p>© {new Date().getFullYear()} Listing Hub. All rights reserved.</p>
       </div>
     </footer>
