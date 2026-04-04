@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import FilterBar, { FilterState } from "@/components/FilterBar";
 import ViewToggle from "@/components/ViewToggle";
 import SearchResultsList from "@/components/SearchResultsList";
@@ -12,10 +13,20 @@ import { Listing, ListingSummary } from "@/types/listing";
 type Mode = "list" | "map" | "split";
 
 export default function SearchClient() {
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("split");
-  const [filters, setFilters] = useState<FilterState>({
-    status: "for_sale",
-    city: "Calgary",
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    return {
+      status: (params.get("status") as any) || "for_sale",
+      city: params.get("city") || "Calgary",
+      propertyType: (params.get("propertyType") as any) || undefined,
+      priceMin: params.get("priceMin") ? Number(params.get("priceMin")) : null,
+      priceMax: params.get("priceMax") ? Number(params.get("priceMax")) : null,
+      bedroomsMin: params.get("bedroomsMin")
+        ? Number(params.get("bedroomsMin"))
+        : null,
+    };
   });
   const [items, setItems] = useState<ListingSummary[]>([]);
   const [loading, setLoading] = useState(false);
