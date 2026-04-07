@@ -53,6 +53,13 @@ export default function Navbar() {
           </ul>
         )}
 
+        <Link
+          href="/calculator"
+          className="font-dm text-sm font-medium text-gray-600 no-underline py-1.5 px-3 rounded-lg transition-all duration-150 hover:bg-gray-100 hover:text-gray-900"
+        >
+          Calculator
+        </Link>
+
         {/* Right side */}
         <div className="flex items-center gap-3 ml-auto">
           {loading ? (
