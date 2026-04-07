@@ -58,7 +58,9 @@ export default function ListingClient() {
         </div>
         <div className="space-y-6">
           <MapSnippet lat={lat} lng={lng} />
-          <AffordabilityCalculator initialPrice={listing.price} />
+          {listing.status === "for_sale" && (
+            <AffordabilityCalculator initialPrice={listing.price} />
+          )}
         </div>
       </div>
     </div>
