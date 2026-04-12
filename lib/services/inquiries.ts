@@ -1,4 +1,13 @@
-import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getAgentListings } from "@/lib/services/listings";
 import { Inquiry } from "@/types/inquiry";
@@ -51,4 +60,28 @@ export async function getAgentInquiries(agentId: string): Promise<Inquiry[]> {
 export async function deleteInquiry(inquiryId: string): Promise<void> {
   const ref = doc(db, COLLECTION, inquiryId);
   await deleteDoc(ref);
+}
+
+export async function createInquiry(
+  listingId: string,
+  name: string,
+  email: string,
+  message: string,
+): Promise<Inquiry> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    listing_id: listingId,
+    name,
+    email,
+    message,
+    createdAt: serverTimestamp(),
+  });
+
+  return {
+    id: docRef.id,
+    listing_id: listingId,
+    name,
+    email,
+    message,
+    createdAt: new Date().toISOString(),
+  };
 }

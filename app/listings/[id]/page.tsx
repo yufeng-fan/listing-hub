@@ -8,6 +8,7 @@ import ImageGallery from "@/components/ImageGallery";
 import FactGrid from "@/components/FactGrid";
 import MapSnippet from "@/components/MapSnippet";
 import AffordabilityCalculator from "@/components/AffordabilityCalculator";
+import InquiryForm from "@/components/InquiryForm";
 
 export default function ListingClient() {
   const [listing, setListing] = useState<Listing | null>(null);
@@ -55,6 +56,7 @@ export default function ListingClient() {
               {listing.description || "No description provided."}
             </p>
           </div>
+          <InquiryForm listingId={listing.id} agentId={listing.agent_id} />
         </div>
         <div className="space-y-6">
           <MapSnippet lat={lat} lng={lng} />
