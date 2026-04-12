@@ -120,7 +120,7 @@ export default function Contact() {
               value={listingId}
               onChange={(event) => setListingId(event.target.value)}
               className="p-2 rounded border w-1/4 bg-gray-300 text-black"
-              placeholder="Listing ID"
+              placeholder="Listing ID found at the end of the listing URL"
               required
             />
             <label className="text-left text-white mt-4">Message</label>
