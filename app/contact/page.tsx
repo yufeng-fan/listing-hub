@@ -114,7 +114,7 @@ export default function Contact() {
               required
               pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
             />
-            <label className="text-left text-white mt-4">Listing</label>
+            <label className="text-left text-white mt-4">Listing ID (found at the end of the listing URL)</label>
             <input
               type="text"
               value={listingId}
