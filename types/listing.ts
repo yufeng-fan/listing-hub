@@ -70,3 +70,21 @@ export interface PageResult<T> {
   items: T[];
   nextCursor: any | null;
 }
+
+// User Favorites
+export interface UserFavorite {
+  id: string;
+  user_id: string;
+  listing_id: string;
+  createdAt: string; // ISO string
+}
+
+// Saved Searches
+export interface SavedSearch {
+  id: string;
+  user_id: string;
+  name: string;
+  filters: ListingsFilter;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+}

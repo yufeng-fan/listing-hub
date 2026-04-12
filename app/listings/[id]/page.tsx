@@ -7,6 +7,7 @@ import { Listing } from "@/types/listing";
 import ImageGallery from "@/components/ImageGallery";
 import FactGrid from "@/components/FactGrid";
 import MapSnippet from "@/components/MapSnippet";
+import AffordabilityCalculator from "@/components/AffordabilityCalculator";
 
 export default function ListingClient() {
   const [listing, setListing] = useState<Listing | null>(null);
@@ -55,8 +56,11 @@ export default function ListingClient() {
             </p>
           </div>
         </div>
-        <div>
+        <div className="space-y-6">
           <MapSnippet lat={lat} lng={lng} />
+          {listing.status === "for_sale" && (
+            <AffordabilityCalculator initialPrice={listing.price} />
+          )}
         </div>
       </div>
     </div>

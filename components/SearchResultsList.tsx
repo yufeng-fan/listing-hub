@@ -96,7 +96,7 @@ export default function SearchResultsList({
                 style={{ height: itemHeight }}
                 className="p-2"
               >
-                <ListingCard item={item} />
+                <ListingCard item={item} showFavoriteButton={true} />
               </div>
             );
           })}
