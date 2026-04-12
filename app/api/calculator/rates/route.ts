@@ -7,31 +7,53 @@ let cacheTimestamp = 0;
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 async function fetchRatesFromAPI(): Promise<InterestRateData> {
-  const apiKey = process.env.FRED_API_KEY;
+  const apiKey = process.env.RAPIDAPI_KEY;
 
   if (apiKey) {
-    // Use FRED (Federal Reserve Economic Data) API for real mortgage rates
-    // Series: MORTGAGE30US (30-Year Fixed), MORTGAGE15US (15-Year Fixed), MORTGAGE5US (5/1-Year ARM)
-    const seriesIds = ["MORTGAGE30US", "MORTGAGE15US", "MORTGAGE5US"];
-    const results: number[] = [];
+    // Use RapidAPI "Realty in US" (by APIDojo) – mortgage/v2/check-rates endpoint
+    const url = `https://realty-in-us.p.rapidapi.com/mortgage/v2/check-rates?postal_code=90004`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-rapidapi-key": apiKey,
+        "x-rapidapi-host": "realty-in-us.p.rapidapi.com",
+      },
+      next: { revalidate: 3600 },
+    });
 
-    for (const seriesId of seriesIds) {
-      const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${encodeURIComponent(seriesId)}&api_key=${encodeURIComponent(apiKey)}&file_type=json&sort_order=desc&limit=1`;
-      const res = await fetch(url, { next: { revalidate: 3600 } });
+    if (!res.ok) {
+      throw new Error(`RapidAPI mortgage rates error: ${res.status}`);
+    }
 
-      if (!res.ok) {
-        throw new Error(`FRED API error for ${seriesId}: ${res.status}`);
+    const data = await res.json();
+
+    // Parse rates from the response – the API returns rate objects under data.loan_analysis.market
+    const market = data?.data?.loan_analysis?.market;
+    const ratesArray: Array<{ loan_type?: { term?: number; loan_id?: string }; rate?: number }> =
+      market?.mortgage_data?.average_rates ?? [];
+
+    let rate30yr = 0;
+    let rate15yr = 0;
+    let rateArm5 = 0;
+
+    for (const entry of ratesArray) {
+      const loanId = entry.loan_type?.loan_id ?? "";
+      const term = entry.loan_type?.term ?? 0;
+      const rate = entry.rate ?? 0;
+
+      if (loanId === "thirty_year_fix" || term === 30) {
+        rate30yr = rate;
+      } else if (loanId === "fifteen_year_fix" || term === 15) {
+        rate15yr = rate;
+      } else if (loanId === "five_one_arm" || loanId.includes("arm")) {
+        rateArm5 = rate;
       }
-
-      const data = await res.json();
-      const value = parseFloat(data.observations?.[0]?.value);
-      results.push(isNaN(value) ? 0 : value);
     }
 
     return {
-      rate30yr: results[0],
-      rate15yr: results[1],
-      rateArm5: results[2],
+      rate30yr,
+      rate15yr,
+      rateArm5,
       lastUpdated: new Date().toISOString(),
     };
   }
