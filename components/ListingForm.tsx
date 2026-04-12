@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import FormField from "@/components/shared/FormField";
-import ImageUploader from "@/components/ImageUploader";
+import ImageUploader, { ImageItem } from "@/components/ImageUploader";
+import { uploadListingImage } from "@/lib/services/listings";
 import {
   Listing,
   ListingImage,
@@ -84,7 +85,7 @@ export default function ListingForm({
   const [longitude, setLongitude] = useState(
     initial?.location?.longitude?.toString() ?? "",
   );
-  const [images, setImages] = useState<ListingImage[]>(
+  const [images, setImages] = useState<ImageItem[]>(
     initial?.images ?? [],
   );
 
@@ -115,6 +116,24 @@ export default function ListingForm({
     setGeneralError("");
 
     try {
+      // Upload pending images (local previews → storage) before saving
+      const pendingImages = images.filter((img) => !!img.file);
+      const savedImages = images.filter((img) => !img.file);
+
+      const uploadedImages = await Promise.all(
+        pendingImages.map((img) =>
+          uploadListingImage(agentId, img.file!, img.order),
+        ),
+      );
+
+      // Revoke blob preview URLs
+      pendingImages.forEach((img) => URL.revokeObjectURL(img.original_url));
+
+      const finalImages: ListingImage[] = [
+        ...savedImages.map(({ file: _, ...rest }): ListingImage => rest),
+        ...uploadedImages,
+      ].map((img, idx) => ({ ...img, order: idx }));
+
       await onSubmit({
         title: title.trim(),
         description: description.trim(),
@@ -132,7 +151,7 @@ export default function ListingForm({
           latitude: Number(latitude) || 0,
           longitude: Number(longitude) || 0,
         },
-        images,
+        images: finalImages,
       });
     } catch {
       setGeneralError("Something went wrong. Please try again.");
@@ -295,7 +314,6 @@ export default function ListingForm({
           Images
         </h3>
         <ImageUploader
-          agentId={agentId}
           images={images}
           onChange={setImages}
         />

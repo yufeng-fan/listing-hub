@@ -2,27 +2,23 @@
 
 import { useCallback, useRef, useState } from "react";
 import { ListingImage } from "@/types/listing";
-import {
-  uploadListingImage,
-  deleteListingImage,
-} from "@/lib/services/listings";
+import { deleteListingImage } from "@/lib/services/listings";
+
+export type ImageItem = ListingImage & { file?: File };
 
 interface ImageUploaderProps {
-  agentId: string;
-  images: ListingImage[];
-  onChange: (images: ListingImage[]) => void;
+  images: ImageItem[];
+  onChange: (images: ImageItem[]) => void;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export default function ImageUploader({
-  agentId,
   images,
   onChange,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +31,7 @@ export default function ImageUploader({
   };
 
   const handleFiles = useCallback(
-    async (fileList: FileList | File[]) => {
+    (fileList: FileList | File[]) => {
       const files = Array.from(fileList);
       if (files.length === 0) return;
 
@@ -48,27 +44,34 @@ export default function ImageUploader({
       }
 
       setError(null);
-      setUploading(true);
 
-      try {
-        const startOrder = images.length;
-        const uploaded = await Promise.all(
-          files.map((file, i) =>
-            uploadListingImage(agentId, file, startOrder + i),
-          ),
-        );
-        onChange([...images, ...uploaded]);
-      } catch {
-        setError("Upload failed. Please try again.");
-      } finally {
-        setUploading(false);
-      }
+      const startOrder = images.length;
+      const newItems: ImageItem[] = files.map((file, i) => {
+        const previewUrl = URL.createObjectURL(file);
+        return {
+          id: crypto.randomUUID(),
+          original_url: previewUrl,
+          thumbnail_url: previewUrl,
+          path: "",
+          width: 0,
+          height: 0,
+          order: startOrder + i,
+          uploaded_at: "",
+          file,
+        };
+      });
+
+      onChange([...images, ...newItems]);
     },
-    [agentId, images, onChange],
+    [images, onChange],
   );
 
-  const handleRemove = async (img: ListingImage) => {
-    await deleteListingImage(img.original_url);
+  const handleRemove = async (img: ImageItem) => {
+    if (img.file) {
+      URL.revokeObjectURL(img.original_url);
+    } else {
+      await deleteListingImage(img.original_url);
+    }
     const next = images
       .filter((i) => i.id !== img.id)
       .map((i, idx) => ({ ...i, order: idx }));
@@ -117,18 +120,14 @@ export default function ImageUploader({
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />
-        {uploading ? (
-          <p className="font-dm text-sm text-gray-500">Uploading…</p>
-        ) : (
-          <>
-            <p className="font-dm text-sm text-gray-600 font-medium">
-              Drop images here or click to browse
-            </p>
-            <p className="font-dm text-xs text-gray-400 mt-1">
-              JPEG, PNG, or WebP up to 10 MB
-            </p>
-          </>
-        )}
+        <>
+          <p className="font-dm text-sm text-gray-600 font-medium">
+            Drop images here or click to browse
+          </p>
+          <p className="font-dm text-xs text-gray-400 mt-1">
+            JPEG, PNG, or WebP up to 10 MB
+          </p>
+        </>
       </div>
 
       {error && (
