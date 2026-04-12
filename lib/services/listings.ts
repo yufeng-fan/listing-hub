@@ -174,6 +174,19 @@ export async function updateListing(
 
 /* ── Delete ─────────────────────────────────────────────── */
 
+async function deleteListingInquiries(listingId: string): Promise<void> {
+  const inquiriesQuery = query(
+    collection(db, "inquiries"),
+    where("listing_id", "==", listingId),
+  );
+  const inquirySnap = await getDocs(inquiriesQuery);
+  await Promise.all(
+    inquirySnap.docs.map((inquiryDoc) =>
+      deleteDoc(doc(db, "inquiries", inquiryDoc.id)),
+    ),
+  );
+}
+
 export async function deleteListing(id: string): Promise<void> {
   // Fetch existing images to clean up storage
   const listing = await getListingById(id);
@@ -182,6 +195,8 @@ export async function deleteListing(id: string): Promise<void> {
       listing.images.map((img) => deleteListingImage(img.path)),
     );
   }
+
+  await deleteListingInquiries(id);
   await deleteDoc(doc(db, COLLECTION, id));
 }
 
